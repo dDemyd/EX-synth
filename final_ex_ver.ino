@@ -502,7 +502,7 @@ void setup()
     pinMode(sensorPins[i], INPUT_PULLDOWN);
   pinMode(syncInPin, INPUT_PULLDOWN);
   for (int i = 0; i < 4; i++)
-    pinMode(touchPins[i], INPUT);
+    pinMode(touchPins[i], INPUT_PULLDOWN); // тач активний-HIGH -> підтяжка донизу проти «плаваючого» входу
 
   display.clearDisplay();
   display.setTextSize(2);
