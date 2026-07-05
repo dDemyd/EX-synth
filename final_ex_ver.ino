@@ -606,6 +606,11 @@ void loop()
   {
     unsigned long dynamicInterval = stepDurationMs / paramValues[10];
 
+    // Roller застосовуємо ДО розрахунку свінгу, щоб зсув брався від
+    // реального (поділеного) інтервалу й не викликав переповнення.
+    if (rollerActive)
+      dynamicInterval = dynamicInterval / 4;
+
     long swingOffset = 0;
     if (paramValues[4] > 0)
     {
@@ -617,16 +622,17 @@ void loop()
         swingOffset = -calculatedOffset;
     }
 
-    if (rollerActive)
-      dynamicInterval = dynamicInterval / 4;
-
     // Зовнішній SYNC: реагуємо лише на фронт LOW->HIGH. Інакше утримання
     // лінії у HIGH прокручувало б секвенсор щоразу в loop() (runaway).
     bool syncNow = digitalRead(syncInPin);
     bool syncEdge = (syncNow && !syncPrev);
     syncPrev = syncNow;
 
-    if (millis() - lastStepTime > (dynamicInterval + swingOffset) || syncEdge)
+    long stepInterval = (long)dynamicInterval + swingOffset;
+    if (stepInterval < 1)
+      stepInterval = 1; // страхування від нульового/від'ємного інтервалу
+
+    if ((long)(millis() - lastStepTime) > stepInterval || syncEdge)
     {
       seqStep = (seqStep + 1) % seqLength;
       lastStepTime = millis();
