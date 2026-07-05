@@ -47,7 +47,8 @@ const char *paramNames[NUM_PARAMS] = {
     "WAVE", "TONE", "GLIDE", "DETUNE",
     "SWING", "SUB-OSC", "ATTACK", "DECAY",
     "LFO RATE", "LFO DEPTH", "CLOCK DIV"};
-int paramValues[NUM_PARAMS] = {1, 50, 30, 10, 0, 0, 0, 30, 40, 0, 1};
+// volatile: пишеться ядром 0 (updateTouchButtons), читається ядром 1 (loop1)
+volatile int paramValues[NUM_PARAMS] = {1, 50, 30, 10, 0, 0, 0, 30, 40, 0, 1};
 
 // --- СТАН И ТАЙМЕРИ ІНТЕРФЕЙСУ ---
 bool isPopUpActive = false;
