@@ -8,9 +8,11 @@ Severity legend: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 
 ## Status
 
-**#1–#12 are fixed** (one commit each on `main`) — see the "Resolved" mapping at the
-bottom. **#13–#18 (Low) remain open** as documented follow-ups. Note: fixes were made
-without a compiler in the environment, so **build once before flashing**.
+**#1–#17 are fixed** (one commit each on `main`) — see the "Resolved" mapping at the
+bottom. **#18 is partially done**: parameter indices are now a named enum; a full
+modular split, a `potValues` rename, and unifying the comment language are deferred as
+larger refactors. Note: fixes were made without a compiler in the environment, so
+**build once before flashing**.
 
 ## Summary table
 
@@ -59,13 +61,19 @@ without a compiler in the environment, so **build once before flashing**.
 | 11 | Replace blocking delay() debounces with edge detection |
 | 12 | Replace String flash message with fixed char buffer |
 | 6 | Documented inline as a stock-Pico wiring caveat (no code change — pin choice depends on the board) |
+| 13 | Seed RNG from RP2040 hardware entropy |
+| 14 | Add pulldowns to touch inputs |
+| 15 | Check display.begin() and signal OLED failure |
+| 16 | Remove duplicate boot "LOADED SLOT 1" splash |
+| 17 | Folded into #1/#2 (dead LED writes removed) |
+| 18 | Parameter indices replaced with a named enum (rest of the refactor deferred) |
 
-**Still open:** #13 (seed `random()`), #14 (touch-pin pulls), #15 (check `display.begin()`),
-#16 (duplicate boot splash), #17 (folded into #1/#2), #18 (modularization / naming / comment language).
+**Still open (deferred):** the larger part of #18 — splitting the sketch into modules,
+renaming `potValues`, and unifying the comment language — left for a session with a
+compiler in the loop.
 
 ## Verdict
 
-**#1–#12 addressed.** The remaining items are low-severity robustness and
-maintainability polish. Compile against the arduino-pico core and bench-test the
-sequencer (swing + roller together, external sync, save/load) before flashing to
-hardware.
+**#1–#17 addressed; #18 partially.** The remaining work is a maintainability refactor,
+not a defect. Compile against the arduino-pico core and bench-test the sequencer
+(swing + roller together, external sync, save/load) before flashing to hardware.

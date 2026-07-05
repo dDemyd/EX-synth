@@ -44,6 +44,21 @@ volatile uint32_t noteTriggerSeq = 0;
 
 // --- СИСТЕМА ЦИФРОВИХ ПАРАМЕТРІВ ---
 const int NUM_PARAMS = 11;
+// Іменовані індекси параметрів (порядок збігається з paramNames / paramValues)
+enum ParamIndex
+{
+  P_WAVE = 0,
+  P_TONE,
+  P_GLIDE,
+  P_DETUNE,
+  P_SWING,
+  P_SUBOSC,
+  P_ATTACK,
+  P_DECAY,
+  P_LFO_RATE,
+  P_LFO_DEPTH,
+  P_CLOCKDIV
+};
 int currentParam = 0;
 const char *paramNames[NUM_PARAMS] = {
     "WAVE", "TONE", "GLIDE", "DETUNE",
@@ -114,10 +129,10 @@ void updateTouchButtons()
       plusHoldTimer = now;
       int step = (currentParam == 0 || currentParam == 10) ? 1 : 5;
       paramValues[currentParam] += step;
-      if (currentParam == 0 && paramValues[0] > 3)
-        paramValues[0] = 0;
-      if (currentParam == 10 && paramValues[10] > 8)
-        paramValues[10] = 1;
+      if (currentParam == 0 && paramValues[P_WAVE] > 3)
+        paramValues[P_WAVE] = 0;
+      if (currentParam == 10 && paramValues[P_CLOCKDIV] > 8)
+        paramValues[P_CLOCKDIV] = 1;
       if (paramValues[currentParam] > 99 && currentParam != 0 && currentParam != 10)
         paramValues[currentParam] = 99;
       if (!isPopUpActive)
@@ -131,10 +146,10 @@ void updateTouchButtons()
         lastRepeatTime = now;
         int step = (currentParam == 0 || currentParam == 10) ? 1 : 5;
         paramValues[currentParam] += step;
-        if (currentParam == 0 && paramValues[0] > 3)
-          paramValues[0] = 0;
-        if (currentParam == 10 && paramValues[10] > 8)
-          paramValues[10] = 1;
+        if (currentParam == 0 && paramValues[P_WAVE] > 3)
+          paramValues[P_WAVE] = 0;
+        if (currentParam == 10 && paramValues[P_CLOCKDIV] > 8)
+          paramValues[P_CLOCKDIV] = 1;
         if (paramValues[currentParam] > 99 && currentParam != 0 && currentParam != 10)
           paramValues[currentParam] = 99;
         popUpTimer = now;
@@ -154,10 +169,10 @@ void updateTouchButtons()
       minusHoldTimer = now;
       int step = (currentParam == 0 || currentParam == 10) ? 1 : 5;
       paramValues[currentParam] -= step;
-      if (currentParam == 0 && paramValues[0] < 0)
-        paramValues[0] = 3;
-      if (currentParam == 10 && paramValues[10] < 1)
-        paramValues[10] = 8;
+      if (currentParam == 0 && paramValues[P_WAVE] < 0)
+        paramValues[P_WAVE] = 3;
+      if (currentParam == 10 && paramValues[P_CLOCKDIV] < 1)
+        paramValues[P_CLOCKDIV] = 8;
       if (paramValues[currentParam] < 0 && currentParam != 0 && currentParam != 10)
         paramValues[currentParam] = 0;
       if (!isPopUpActive)
@@ -171,10 +186,10 @@ void updateTouchButtons()
         lastRepeatTime = now;
         int step = (currentParam == 0 || currentParam == 10) ? 1 : 5;
         paramValues[currentParam] -= step;
-        if (currentParam == 0 && paramValues[0] < 0)
-          paramValues[0] = 3;
-        if (currentParam == 10 && paramValues[10] < 1)
-          paramValues[10] = 8;
+        if (currentParam == 0 && paramValues[P_WAVE] < 0)
+          paramValues[P_WAVE] = 3;
+        if (currentParam == 10 && paramValues[P_CLOCKDIV] < 1)
+          paramValues[P_CLOCKDIV] = 8;
         if (paramValues[currentParam] < 0 && currentParam != 0 && currentParam != 10)
           paramValues[currentParam] = 0;
         popUpTimer = now;
@@ -214,17 +229,17 @@ void updateTouchButtons()
     }
   }
 
-  potValues[0] = paramValues[1];
-  potValues[2] = paramValues[2];
-  potValues[3] = paramValues[3];
+  potValues[0] = paramValues[P_TONE];
+  potValues[2] = paramValues[P_GLIDE];
+  potValues[3] = paramValues[P_DETUNE];
 
-  if (paramValues[0] == 0)
+  if (paramValues[P_WAVE] == 0)
     potValues[1] = 0;
-  if (paramValues[0] == 1)
+  if (paramValues[P_WAVE] == 1)
     potValues[1] = 50;
-  if (paramValues[0] == 2)
+  if (paramValues[P_WAVE] == 2)
     potValues[1] = 99;
-  if (paramValues[0] == 3)
+  if (paramValues[P_WAVE] == 3)
     potValues[1] = 3;
 }
 
@@ -359,23 +374,23 @@ void drawInterface()
     {
       const char *waveNames[4] = {"SINE", "TRIANGLE", "SAWTOOTH", "SQUARE"};
       display.setTextSize(1);
-      display.getTextBounds(waveNames[paramValues[0]], 0, 0, &x1, &y1, &w, &h);
+      display.getTextBounds(waveNames[paramValues[P_WAVE]], 0, 0, &x1, &y1, &w, &h);
       int waveNameX = (SCREEN_WIDTH - w) / 2;
       display.setCursor(waveNameX, 24);
-      display.print(waveNames[paramValues[0]]);
+      display.print(waveNames[paramValues[P_WAVE]]);
 
       int wX = 52;
       int wY = 46;
-      if (paramValues[0] == 0)
+      if (paramValues[P_WAVE] == 0)
         display.drawCircle(wX + 10, wY, 8, SSD1306_WHITE);
-      if (paramValues[0] == 1)
+      if (paramValues[P_WAVE] == 1)
         display.drawTriangle(wX, wY + 8, wX + 10, wY - 8, wX + 20, wY + 8, SSD1306_WHITE);
-      if (paramValues[0] == 2)
+      if (paramValues[P_WAVE] == 2)
       {
         display.drawLine(wX, wY + 8, wX + 14, wY - 8, SSD1306_WHITE);
         display.drawLine(wX + 14, wY - 8, wX + 14, wY + 8, SSD1306_WHITE);
       }
-      if (paramValues[0] == 3)
+      if (paramValues[P_WAVE] == 3)
         display.drawRect(wX, wY - 6, 20, 12, SSD1306_WHITE);
     }
     else
@@ -449,16 +464,16 @@ void drawInterface()
   int iX = 110;
   int iY = 24;
   int iSize = 14;
-  if (paramValues[0] == 0)
+  if (paramValues[P_WAVE] == 0)
     display.drawCircle(iX + iSize / 2, iY + iSize / 2, iSize / 2, SSD1306_WHITE);
-  if (paramValues[0] == 1)
+  if (paramValues[P_WAVE] == 1)
     display.drawTriangle(iX, iY + iSize, iX + iSize / 2, iY, iX + iSize, iY + iSize, SSD1306_WHITE);
-  if (paramValues[0] == 2)
+  if (paramValues[P_WAVE] == 2)
   {
     display.drawLine(iX, iY + iSize, iX + iSize, iY, SSD1306_WHITE);
     display.drawLine(iX + iSize, iY, iX + iSize, iY + iSize, SSD1306_WHITE);
   }
-  if (paramValues[0] == 3)
+  if (paramValues[P_WAVE] == 3)
     display.drawRect(iX, iY, iSize, iSize, SSD1306_WHITE);
 
   // Нижня інфо-панель
@@ -466,16 +481,16 @@ void drawInterface()
   display.setTextSize(1);
   display.setCursor(2, 54);
   display.print("T:");
-  display.print(paramValues[1]);
+  display.print(paramValues[P_TONE]);
   display.setCursor(34, 54);
   display.print("W:");
-  display.print(paramValues[0]);
+  display.print(paramValues[P_WAVE]);
   display.setCursor(66, 54);
   display.print("G:");
-  display.print(paramValues[2]);
+  display.print(paramValues[P_GLIDE]);
   display.setCursor(98, 54);
   display.print("D:");
-  display.print(paramValues[3]);
+  display.print(paramValues[P_DETUNE]);
   display.display();
 }
 
@@ -648,7 +663,7 @@ void loop()
   // Керування кроками з урахуванням SWING та оновленого MUTE MODES
   if (isPlaying && seqLength > 0)
   {
-    int clockDiv = (paramValues[10] < 1) ? 1 : paramValues[10]; // захист від ділення на 0
+    int clockDiv = (paramValues[P_CLOCKDIV] < 1) ? 1 : paramValues[P_CLOCKDIV]; // захист від ділення на 0
     unsigned long dynamicInterval = stepDurationMs / clockDiv;
 
     // Roller застосовуємо ДО розрахунку свінгу, щоб зсув брався від
@@ -657,10 +672,10 @@ void loop()
       dynamicInterval = dynamicInterval / 4;
 
     long swingOffset = 0;
-    if (paramValues[4] > 0)
+    if (paramValues[P_SWING] > 0)
     {
       long maxOffset = dynamicInterval * 0.5f;
-      long calculatedOffset = (maxOffset * paramValues[4]) / 100;
+      long calculatedOffset = (maxOffset * paramValues[P_SWING]) / 100;
       if (seqStep % 2 == 0)
         swingOffset = calculatedOffset;
       else
@@ -765,7 +780,7 @@ void loop1()
   {
     lastTriggerSeq = noteTriggerSeq;
     envState = 1;
-    if (paramValues[6] == 0)
+    if (paramValues[P_ATTACK] == 0)
     {
       envLevel = 1.0f;
       envState = 2;
@@ -774,7 +789,7 @@ void loop1()
 
   if (envState == 1)
   {
-    float attRate = 1.0f / (44.1f * (paramValues[6] + 0.5f));
+    float attRate = 1.0f / (44.1f * (paramValues[P_ATTACK] + 0.5f));
     envLevel += attRate;
     if (envLevel >= 1.0f)
     {
@@ -784,7 +799,7 @@ void loop1()
   }
   else if (envState == 2)
   {
-    float decRate = 1.0f / (44.1f * (paramValues[7] * 3.0f + 1.0f));
+    float decRate = 1.0f / (44.1f * (paramValues[P_DECAY] * 3.0f + 1.0f));
     envLevel -= decRate;
     if (envLevel <= 0.0f)
     {
@@ -823,14 +838,14 @@ void loop1()
       currentFreq += (targetFreq - currentFreq) * glideSpeed;
     }
 
-    float lfoRateHz = 0.1f + (paramValues[8] * 0.15f);
+    float lfoRateHz = 0.1f + (paramValues[P_LFO_RATE] * 0.15f);
     float lfoPhaseInc = (2.0f * PI * lfoRateHz) / (float)sampleRate;
     phaseLFO += lfoPhaseInc;
     if (phaseLFO >= 2.0f * PI)
       phaseLFO -= 2.0f * PI;
     float lfoOut = sinf(phaseLFO);
 
-    float lfoMod = lfoOut * (paramValues[9] / 100.0f) * 35.0f;
+    float lfoMod = lfoOut * (paramValues[P_LFO_DEPTH] / 100.0f) * 35.0f;
     float activeTone = potValues[0] + lfoMod;
     if (activeTone < 0.0f)
       activeTone = 0.0f;
@@ -855,7 +870,7 @@ void loop1()
     if (phaseSub >= 2.0f * PI)
       phaseSub -= 2.0f * PI;
     float sampleSub = generateWave(phaseSub, 1);
-    float subVol = paramValues[5] / 100.0f;
+    float subVol = paramValues[P_SUBOSC] / 100.0f;
 
     float mixedSignal = (sampleA + sampleB) * 0.5f;
     mixedSignal += sampleSub * subVol;
