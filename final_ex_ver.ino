@@ -11,6 +11,11 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire1, -1);
 
 // --- ПІНИ ---
+// УВАГА: ledPins[4] (GP20) та ledPins[6] (GP22) НЕ використовуються як
+// світлодіоди — ці піни зайняті входами: GP20 = syncInPin, GP22 = sensorPins[3]
+// (сенсор запису). Вони конфігуруються як входи й НЕ керуються як LED.
+// Примітка (#6): на стоковому Raspberry Pi Pico GP23 (ledPins[7]) та GP29
+// (touchPins[3]) зарезервовані (SMPS / VSYS sense) — валідно лише на «голому» RP2040.
 const int touchPins[4] = {26, 27, 28, 29};
 const int buttonPins[8] = {6, 7, 8, 9, 10, 11, 12, 13};
 const int ledPins[8] = {16, 17, 18, 19, 20, 21, 22, 23};
@@ -475,8 +480,13 @@ void setup()
   for (int i = 0; i < 8; i++)
   {
     pinMode(buttonPins[i], INPUT_PULLUP);
-    pinMode(ledPins[i], OUTPUT);
-    digitalWrite(ledPins[i], LOW);
+    // Пропускаємо ledPins[4]=GP20 та ledPins[6]=GP22 — вони налаштовуються
+    // як входи (sync / сенсор запису) нижче й не є світлодіодами.
+    if (i != 4 && i != 6)
+    {
+      pinMode(ledPins[i], OUTPUT);
+      digitalWrite(ledPins[i], LOW);
+    }
   }
   for (int i = 0; i < 4; i++)
     pinMode(sensorPins[i], INPUT_PULLDOWN);
@@ -523,7 +533,6 @@ void loop()
     }
   }
   lastRecSensorState = currentRecSensor;
-  digitalWrite(ledPins[6], isRecording);
 
   int activeKey = -1;
   bool restKeyIsHeld = (digitalRead(buttonPins[7]) == LOW);
