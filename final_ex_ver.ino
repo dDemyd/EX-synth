@@ -517,6 +517,8 @@ void setup()
     }
   }
 
+  randomSeed(rp2040.hwrand32()); // апаратний ГВЧ -> недетермінований патерн RND-mute
+
   display.clearDisplay();
   display.setTextSize(2);
   display.setTextColor(SSD1306_WHITE);
