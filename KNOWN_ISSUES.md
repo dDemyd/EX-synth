@@ -6,6 +6,12 @@ firmware was **not** built or flashed.
 
 Severity legend: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 
+## Status
+
+**#1–#12 are fixed** (one commit each on `main`) — see the "Resolved" mapping at the
+bottom. **#13–#18 (Low) remain open** as documented follow-ups. Note: fixes were made
+without a compiler in the environment, so **build once before flashing**.
+
 ## Summary table
 
 | #  | Sev | Location | Problem | Fix direction |
@@ -38,9 +44,28 @@ Severity legend: 🔴 Critical · 🟠 High · 🟡 Medium · ⚪ Low
 - EEPROM save/load validates length and sentinel bytes (255 → rest) and round-trips correctly within the 256-byte budget (7 slots × 20 B).
 - Envelope, glide, detune, sub-osc and LFO math are coherent and range-bounded; final audio (`×2800`) stays well inside `int16_t`.
 
+## Resolved (this branch)
+
+| # | Commit subject |
+|---|----------------|
+| 1, 2 | Fix pin conflicts on GP20/GP22 (drop phantom LEDs) |
+| 3 | Disambiguate record sensor from shift-load (shared GP22) |
+| 4 | Advance sequencer only on SYNC rising edge |
+| 5 | Fix roller+swing interval underflow |
+| 10 | Guard CLOCK DIV divisor against zero |
+| 7 | Mark paramValues volatile for cross-core access |
+| 8 | Cache octave multiplier instead of powf per sample |
+| 9 | Make note-trigger handshake lock-free |
+| 11 | Replace blocking delay() debounces with edge detection |
+| 12 | Replace String flash message with fixed char buffer |
+| 6 | Documented inline as a stock-Pico wiring caveat (no code change — pin choice depends on the board) |
+
+**Still open:** #13 (seed `random()`), #14 (touch-pin pulls), #15 (check `display.begin()`),
+#16 (duplicate boot splash), #17 (folded into #1/#2), #18 (modularization / naming / comment language).
+
 ## Verdict
 
-**Request changes.** Nothing here will fail to compile, but items **#1–#5** are genuine
-functional bugs (two hard pin conflicts, a shared-pin control collision, sync runaway,
-and a swing/roller underflow). Fix those first; #6 needs a one-line answer about the
-target board. The rest are robustness, performance, and maintainability improvements.
+**#1–#12 addressed.** The remaining items are low-severity robustness and
+maintainability polish. Compile against the arduino-pico core and bench-test the
+sequencer (swing + roller together, external sync, save/load) before flashing to
+hardware.
