@@ -8,7 +8,8 @@ build/
 *.d
 *.o
 *.a
-/final_ex_ver/          # generated sketch-name folder (see README build steps)
+# generated sketch-name folder for arduino-cli builds (see README build steps)
+/final_ex_ver/
 
 # --- PlatformIO (if you migrate to it) ---
 .pio/
