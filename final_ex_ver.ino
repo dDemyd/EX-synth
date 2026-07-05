@@ -757,7 +757,16 @@ void loop1()
   {
     if (noteToPlay != -1 && noteToPlay != 7)
     {
-      targetFreq = noteFreqs[noteToPlay] * powf(2.0f, (float)(currentOctave - 4));
+      // powf дуже дорогий на RP2040 (без FPU). Кешуємо множник октави
+      // й перераховуємо його лише при зміні октави, а не щосемпла.
+      static int cachedOctave = -999;
+      static float octaveMul = 1.0f;
+      if (currentOctave != cachedOctave)
+      {
+        octaveMul = powf(2.0f, (float)(currentOctave - 4));
+        cachedOctave = currentOctave;
+      }
+      targetFreq = noteFreqs[noteToPlay] * octaveMul;
     }
 
     if (potValues[2] == 0)
