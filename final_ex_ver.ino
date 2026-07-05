@@ -76,7 +76,8 @@ unsigned long lastStepTime = 0;
 const int fixedBpm = 120;
 unsigned long stepDurationMs = (60000 / fixedBpm) / 2;
 
-bool lastRecSensorState = LOW;
+bool recSensorPrev = false;      // попередній стан сенсора запису (для детекції фронту)
+bool recConsumedAsShift = false; // під час цього торкання сенсор використали як SHIFT
 String flashMessage = "";
 unsigned long flashMessageTime = 0;
 
@@ -514,25 +515,26 @@ void loop()
   if (isPopUpActive && (millis() - popUpTimer > POPUP_DURATION))
     isPopUpActive = false;
 
-  bool shift = digitalRead(sensorPins[3]);
-  bool currentRecSensor = digitalRead(sensorPins[3]);
-  if (currentRecSensor == HIGH && lastRecSensorState == LOW && !isPlaying)
+  // Сенсор запису (GP22) має подвійну роль:
+  //  - коротке торкання (натиснув-відпустив без клавіші) -> перемикання REC;
+  //  - утримання = SHIFT-модифікатор для завантаження слота (див. цикл клавіш).
+  bool recNow = (digitalRead(sensorPins[3]) == HIGH);
+  bool shift = recNow;
+  if (recNow && !recSensorPrev)
+    recConsumedAsShift = false; // почалося нове торкання
+  if (!recNow && recSensorPrev && !recConsumedAsShift && !isPlaying)
   {
-    delay(50);
-    if (digitalRead(sensorPins[3]) == HIGH)
+    // «чисте» торкання без клавіші -> перемикаємо режим запису
+    isRecording = !isRecording;
+    isPopUpActive = false;
+    if (isRecording)
     {
-      isRecording = !isRecording;
-      isPopUpActive = false;
-      if (isRecording)
-      {
-        seqLength = 0;
-        for (int i = 0; i < 16; i++)
-          sequence[i] = -1;
-      }
-      delay(200);
+      seqLength = 0;
+      for (int i = 0; i < 16; i++)
+        sequence[i] = -1;
     }
   }
-  lastRecSensorState = currentRecSensor;
+  recSensorPrev = recNow;
 
   int activeKey = -1;
   bool restKeyIsHeld = (digitalRead(buttonPins[7]) == LOW);
@@ -552,6 +554,7 @@ void loop()
         else if (shift && !isRecording)
         {
           loadSequenceFromEEPROM(i + 1);
+          recConsumedAsShift = true; // придушуємо перемикання REC при відпусканні
           delay(400);
           return;
         }
