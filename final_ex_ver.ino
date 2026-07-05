@@ -484,7 +484,7 @@ void setup()
   Wire1.setSDA(14);
   Wire1.setSCL(15);
   Wire1.begin();
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C, true, false);
+  bool oledOk = display.begin(SSD1306_SWITCHCAPVCC, 0x3C, true, false);
   EEPROM.begin(256);
 
   for (int i = 0; i < 8; i++)
@@ -503,6 +503,19 @@ void setup()
   pinMode(syncInPin, INPUT_PULLDOWN);
   for (int i = 0; i < 4; i++)
     pinMode(touchPins[i], INPUT_PULLDOWN); // тач активний-HIGH -> підтяжка донизу проти «плаваючого» входу
+
+  if (!oledOk)
+  {
+    // OLED не знайдено: сигналізуємо блиманням LED0 і продовжуємо
+    // (аудіо-ядро працює й без екрана).
+    for (int i = 0; i < 6; i++)
+    {
+      digitalWrite(ledPins[0], HIGH);
+      delay(120);
+      digitalWrite(ledPins[0], LOW);
+      delay(120);
+    }
+  }
 
   display.clearDisplay();
   display.setTextSize(2);
