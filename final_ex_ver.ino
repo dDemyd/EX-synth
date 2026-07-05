@@ -519,13 +519,16 @@ void setup()
 
   randomSeed(rp2040.hwrand32()); // апаратний ГВЧ -> недетермінований патерн RND-mute
 
+  // Брендований сплеш замість дубля "LOADED SLOT 1" —
+  // саме повідомлення про завантаження покаже loadSequenceFromEEPROM(1).
   display.clearDisplay();
-  display.setTextSize(2);
   display.setTextColor(SSD1306_WHITE);
-  display.setCursor(15, 15);
-  display.println("LOADED");
-  display.setCursor(15, 38);
-  display.println("SLOT 1");
+  display.setTextSize(3);
+  display.setCursor(30, 12);
+  display.println("EX");
+  display.setTextSize(2);
+  display.setCursor(22, 44);
+  display.println("SYNTH");
   display.display();
   delay(1500);
 
