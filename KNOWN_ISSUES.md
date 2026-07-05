@@ -73,6 +73,21 @@ bench-test on real hardware before relying on it.
 renaming `potValues`, and unifying the comment language — left for a session with a
 compiler in the loop.
 
+## Hardware bring-up (on-device testing)
+
+Flashed to a real RP2040 board (arduino-cli) and traced over USB Serial:
+
+- **Contact bounce → multiple sequencer steps per key press (regression of #11).**
+  Removing the blocking `delay()`s also removed their incidental debounce, so one
+  physical press logged several `justPressed` edges within a few ms and recorded up to
+  ~5 steps at once. **Fixed** with a non-blocking 25 ms per-key debounce; on-device
+  Serial trace confirmed 1 press → exactly 1 step. A guarded Serial debug harness
+  (`#define DEBUG_LOG`) is left in, compiled out by default.
+- **"DO" key dead — hardware, not firmware.** GP6 never read LOW across many presses
+  and holds (0 key-edge events, 0 heartbeats with that bit set), while other keys
+  registered normally. Points to a broken solder joint / switch on GP6 (or that key
+  wired to a different GPIO). No code change applies.
+
 ## Verdict
 
 **#1–#17 addressed; #18 partially.** The remaining work is a maintainability refactor,

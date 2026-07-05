@@ -5,6 +5,11 @@
 #include <Adafruit_SSD1306.h>
 #include <EEPROM.h>
 
+// --- НАЛАГОДЖЕННЯ ЧЕРЕЗ SERIAL ---
+// 1 = вмикає діагностичні логи (фронти клавіш, події запису/save/load,
+// heartbeat зі станом кнопок) у Serial @115200. 0 = повністю компілюється в ніщо.
+#define DEBUG_LOG 0
+
 // --- КОНФІГУРАЦІЯ ЕКРАНА ---
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -496,6 +501,9 @@ void drawInterface()
 
 void setup()
 {
+#if DEBUG_LOG
+  Serial.begin(115200);
+#endif
   Wire1.setSDA(14);
   Wire1.setSCL(15);
   Wire1.begin();
@@ -581,14 +589,34 @@ void loop()
   int activeKey = -1;
   bool restKeyIsHeld = (digitalRead(buttonPins[7]) == LOW);
 
-  // Неблокуюче сканування клавіш: дії SAVE/LOAD/запис кроку — по фронту
-  // натискання (justPressed), а не через delay().
-  static bool keyPrev[8] = {false, false, false, false, false, false, false, false};
+  // Неблокуюче сканування клавіш із дебаунсом: приймаємо зміну стану лише
+  // після того, як сирий рівень протримався стабільним KEY_DEBOUNCE_MS.
+  // Дії SAVE/LOAD/запис кроку — по фронту стабільного натискання (justPressed).
+  static bool keyStable[8] = {false, false, false, false, false, false, false, false};
+  static bool keyLastRaw[8] = {false, false, false, false, false, false, false, false};
+  static unsigned long keyChangeTime[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+  const unsigned long KEY_DEBOUNCE_MS = 25;
+  unsigned long nowKeys = millis();
+
   for (int i = 0; i < 8; i++)
   {
-    bool pressed = (digitalRead(buttonPins[i]) == LOW);
-    bool justPressed = pressed && !keyPrev[i];
-    keyPrev[i] = pressed;
+    bool raw = (digitalRead(buttonPins[i]) == LOW);
+    if (raw != keyLastRaw[i])
+    {
+      keyLastRaw[i] = raw;
+      keyChangeTime[i] = nowKeys; // рівень «тремтить» — перезапускаємо відлік стабільності
+    }
+
+    bool justPressed = false;
+    if ((nowKeys - keyChangeTime[i]) >= KEY_DEBOUNCE_MS && raw != keyStable[i])
+    {
+      keyStable[i] = raw;
+      justPressed = raw; // стабільний перехід у «натиснуто»
+#if DEBUG_LOG
+      Serial.printf("[KEY] t=%lu i=%d %s\n", nowKeys, i, raw ? "DOWN" : "up");
+#endif
+    }
+    bool pressed = keyStable[i];
 
     if (!pressed)
       continue;
@@ -596,7 +624,12 @@ void loop()
     if (i < 7 && restKeyIsHeld && !isRecording)
     {
       if (justPressed)
+      {
         saveSequenceToEEPROM(i + 1);
+#if DEBUG_LOG
+        Serial.printf("[SAVE] t=%lu key=%d -> slot %d\n", millis(), i, i + 1);
+#endif
+      }
       continue; // не трактуємо як ноту
     }
     if (i < 7 && shift && !isRecording)
@@ -605,6 +638,9 @@ void loop()
       {
         loadSequenceFromEEPROM(i + 1);
         recConsumedAsShift = true; // придушуємо перемикання REC при відпусканні
+#if DEBUG_LOG
+        Serial.printf("[LOAD] t=%lu key=%d -> slot %d\n", millis(), i, i + 1);
+#endif
       }
       continue;
     }
@@ -613,6 +649,9 @@ void loop()
     if (isRecording && justPressed && seqLength < 16)
     {
       sequence[seqLength++] = i;
+#if DEBUG_LOG
+      Serial.printf("[REC] t=%lu -> step %d = note %d (len=%d)\n", millis(), seqLength - 1, i, seqLength);
+#endif
       int led = seqLength - 1;
       if (led < 8 && led != 4 && led != 6)
       {
@@ -728,6 +767,19 @@ void loop()
         digitalWrite(ledPins[i], ledState);
     }
   }
+
+#if DEBUG_LOG
+  static unsigned long dbgHb = 0;
+  if (millis() - dbgHb > 2000)
+  {
+    dbgHb = millis();
+    Serial.print("[HB] btn=");
+    for (int i = 0; i < 8; i++)
+      Serial.print(digitalRead(buttonPins[i]) == LOW ? '1' : '0');
+    Serial.printf(" recSns=%d isRec=%d isPlay=%d actKey=%d note=%d\n",
+                  (int)digitalRead(sensorPins[3]), isRecording, isPlaying, activeKey, noteToPlay);
+  }
+#endif
 
   static uint32_t displayTimer = 0;
   if (millis() - displayTimer > 100)
