@@ -82,7 +82,7 @@ unsigned long stepDurationMs = (60000 / fixedBpm) / 2;
 
 bool recSensorPrev = false;      // попередній стан сенсора запису (для детекції фронту)
 bool recConsumedAsShift = false; // під час цього торкання сенсор використали як SHIFT
-String flashMessage = "";
+char flashMessage[24] = ""; // без String — уникаємо фрагментації кучі
 unsigned long flashMessageTime = 0;
 
 int recBlinkLed = -1;          // LED-фідбек при записі кроку (-1 = вимкнено)
@@ -236,7 +236,7 @@ void saveSequenceToEEPROM(int slot)
   for (int i = 0; i < 16; i++)
     EEPROM.write(startAddr + 1 + i, sequence[i]);
   EEPROM.commit();
-  flashMessage = "SAVED TO\nSLOT " + String(slot);
+  snprintf(flashMessage, sizeof(flashMessage), "SAVED TO\nSLOT %d", slot);
   flashMessageTime = millis();
 }
 
@@ -251,7 +251,7 @@ void loadSequenceFromEEPROM(int slot)
     int val = EEPROM.read(startAddr + 1 + i);
     sequence[i] = (val == 255 || val > 7) ? -1 : val;
   }
-  flashMessage = "LOADED\nSLOT " + String(slot);
+  snprintf(flashMessage, sizeof(flashMessage), "LOADED\nSLOT %d", slot);
   flashMessageTime = millis();
 }
 
@@ -264,15 +264,18 @@ void drawInterface()
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
 
-  if (flashMessage != "" && (millis() - flashMessageTime < 2000))
+  if (flashMessage[0] != '\0' && (millis() - flashMessageTime < 2000))
   {
     display.setTextSize(2);
     display.setCursor(10, 15);
-    if (flashMessage.indexOf('\n') != -1)
+    char *nl = strchr(flashMessage, '\n');
+    if (nl != nullptr)
     {
-      display.print(flashMessage.substring(0, flashMessage.indexOf('\n')));
+      *nl = '\0';
+      display.print(flashMessage);
       display.setCursor(10, 38);
-      display.print(flashMessage.substring(flashMessage.indexOf('\n') + 1));
+      display.print(nl + 1);
+      *nl = '\n'; // відновлюємо роздільник рядків
     }
     else
     {
@@ -281,9 +284,9 @@ void drawInterface()
     display.display();
     return;
   }
-  else if (flashMessage != "")
+  else if (flashMessage[0] != '\0')
   {
-    flashMessage = "";
+    flashMessage[0] = '\0';
   }
 
   if (isRecording)
