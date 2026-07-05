@@ -1,0 +1,28 @@
+# --- Arduino / arduino-cli build output ---
+build/
+*.elf
+*.hex
+*.bin
+*.uf2
+*.map
+*.d
+*.o
+*.a
+/final_ex_ver/          # generated sketch-name folder (see README build steps)
+
+# --- PlatformIO (if you migrate to it) ---
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# --- Editors / IDE ---
+.vscode/
+.idea/
+*.swp
+*~
+
+# --- macOS / Windows / Linux cruft ---
+.DS_Store
+.AppleDouble
+Thumbs.db
+desktop.ini
