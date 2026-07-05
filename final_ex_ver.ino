@@ -73,6 +73,7 @@ int seqLength = 0;
 bool isPlaying = false;
 bool isRecording = false;
 unsigned long lastStepTime = 0;
+bool syncPrev = false; // попередній рівень syncInPin (детекція фронту)
 const int fixedBpm = 120;
 unsigned long stepDurationMs = (60000 / fixedBpm) / 2;
 
@@ -619,18 +620,17 @@ void loop()
     if (rollerActive)
       dynamicInterval = dynamicInterval / 4;
 
-    if (millis() - lastStepTime > (dynamicInterval + swingOffset) || digitalRead(syncInPin))
+    // Зовнішній SYNC: реагуємо лише на фронт LOW->HIGH. Інакше утримання
+    // лінії у HIGH прокручувало б секвенсор щоразу в loop() (runaway).
+    bool syncNow = digitalRead(syncInPin);
+    bool syncEdge = (syncNow && !syncPrev);
+    syncPrev = syncNow;
+
+    if (millis() - lastStepTime > (dynamicInterval + swingOffset) || syncEdge)
     {
       seqStep = (seqStep + 1) % seqLength;
       lastStepTime = millis();
       noteTriggered = true;
-      if (digitalRead(syncInPin))
-        digitalWrite(ledPins[4], HIGH);
-    }
-    else
-    {
-      if (!digitalRead(syncInPin) && (seqStep % 8 != 4))
-        digitalWrite(ledPins[4], LOW);
     }
 
     // Нова логіка визначення, чи глушити поточний крок
