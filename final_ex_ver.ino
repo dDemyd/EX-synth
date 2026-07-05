@@ -85,6 +85,9 @@ bool recConsumedAsShift = false; // під час цього торкання с
 String flashMessage = "";
 unsigned long flashMessageTime = 0;
 
+int recBlinkLed = -1;          // LED-фідбек при записі кроку (-1 = вимкнено)
+unsigned long recBlinkOff = 0; // час згасання recBlinkLed (неблокуюче)
+
 // --- ОБРОБКА СЕНСОРІВ МЕНЮ ТА КНОПОК ---
 void updateTouchButtons()
 {
@@ -100,7 +103,6 @@ void updateTouchButtons()
     else
       currentParam = (currentParam + 1) % NUM_PARAMS;
     popUpTimer = now;
-    delay(50);
   }
   lastSelectState = currentSelectState;
 
@@ -543,37 +545,53 @@ void loop()
   int activeKey = -1;
   bool restKeyIsHeld = (digitalRead(buttonPins[7]) == LOW);
 
+  // Неблокуюче сканування клавіш: дії SAVE/LOAD/запис кроку — по фронту
+  // натискання (justPressed), а не через delay().
+  static bool keyPrev[8] = {false, false, false, false, false, false, false, false};
   for (int i = 0; i < 8; i++)
   {
-    if (digitalRead(buttonPins[i]) == LOW)
+    bool pressed = (digitalRead(buttonPins[i]) == LOW);
+    bool justPressed = pressed && !keyPrev[i];
+    keyPrev[i] = pressed;
+
+    if (!pressed)
+      continue;
+
+    if (i < 7 && restKeyIsHeld && !isRecording)
     {
-      if (i < 7)
+      if (justPressed)
+        saveSequenceToEEPROM(i + 1);
+      continue; // не трактуємо як ноту
+    }
+    if (i < 7 && shift && !isRecording)
+    {
+      if (justPressed)
       {
-        if (restKeyIsHeld && !isRecording)
-        {
-          saveSequenceToEEPROM(i + 1);
-          delay(400);
-          return;
-        }
-        else if (shift && !isRecording)
-        {
-          loadSequenceFromEEPROM(i + 1);
-          recConsumedAsShift = true; // придушуємо перемикання REC при відпусканні
-          delay(400);
-          return;
-        }
+        loadSequenceFromEEPROM(i + 1);
+        recConsumedAsShift = true; // придушуємо перемикання REC при відпусканні
       }
-      activeKey = i;
-      if (isRecording && seqLength < 16)
+      continue;
+    }
+
+    activeKey = i;
+    if (isRecording && justPressed && seqLength < 16)
+    {
+      sequence[seqLength++] = i;
+      int led = seqLength - 1;
+      if (led < 8 && led != 4 && led != 6)
       {
-        sequence[seqLength++] = i;
-        if (seqLength <= 8)
-          digitalWrite(ledPins[seqLength - 1], HIGH);
-        delay(250);
-        if (seqLength <= 8)
-          digitalWrite(ledPins[seqLength - 1], LOW);
+        digitalWrite(ledPins[led], HIGH);
+        recBlinkLed = led;
+        recBlinkOff = millis() + 150;
       }
     }
+  }
+
+  // Неблокуюче згасання LED-фідбеку запису кроку
+  if (recBlinkLed != -1 && millis() >= recBlinkOff)
+  {
+    digitalWrite(ledPins[recBlinkLed], LOW);
+    recBlinkLed = -1;
   }
 
   static int lastActiveKey = -1;
@@ -584,25 +602,27 @@ void loop()
   }
   lastActiveKey = activeKey;
 
-  if (digitalRead(sensorPins[0]))
-  {
+  // Октава та play/pause — по фронту натискання, без блокуючих delay()
+  static bool octDownPrev = false, octUpPrev = false, playPrev = false;
+  bool octDownNow = digitalRead(sensorPins[0]);
+  if (octDownNow && !octDownPrev)
     currentOctave = max(1, currentOctave - 1);
-    delay(250);
-  }
-  if (digitalRead(sensorPins[1]))
-  {
-    currentOctave = min(7, currentOctave + 1);
-    delay(250);
-  }
+  octDownPrev = octDownNow;
 
-  if (digitalRead(sensorPins[2]))
+  bool octUpNow = digitalRead(sensorPins[1]);
+  if (octUpNow && !octUpPrev)
+    currentOctave = min(7, currentOctave + 1);
+  octUpPrev = octUpNow;
+
+  bool playNow = digitalRead(sensorPins[2]);
+  if (playNow && !playPrev)
   {
     if (isRecording)
       isRecording = false;
     isPlaying = !isPlaying;
     seqStep = 0;
-    delay(300);
   }
+  playPrev = playNow;
 
   // Керування кроками з урахуванням SWING та оновленого MUTE MODES
   if (isPlaying && seqLength > 0)
