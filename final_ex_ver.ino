@@ -38,7 +38,9 @@ volatile int potValues[4] = {50, 1, 30, 10};
 volatile float currentFreq = 0;
 volatile float targetFreq = 0;
 volatile int noteToPlay = -1;
-volatile bool noteTriggered = false;
+// Лічильник тригерів нот. Ядро 0 інкрементує (єдиний виробник), ядро 1
+// відстежує останнє значення — так тригер не губиться й не задвоюється.
+volatile uint32_t noteTriggerSeq = 0;
 
 // --- СИСТЕМА ЦИФРОВИХ ПАРАМЕТРІВ ---
 const int NUM_PARAMS = 11;
@@ -578,7 +580,7 @@ void loop()
   if (activeKey != -1 && activeKey != 7)
   {
     if (activeKey != lastActiveKey && !isPlaying)
-      noteTriggered = true;
+      noteTriggerSeq++;
   }
   lastActiveKey = activeKey;
 
@@ -638,7 +640,7 @@ void loop()
     {
       seqStep = (seqStep + 1) % seqLength;
       lastStepTime = millis();
-      noteTriggered = true;
+      noteTriggerSeq++;
     }
 
     // Нова логіка визначення, чи глушити поточний крок
@@ -717,9 +719,10 @@ void loop1()
   static int envState = 0;
   static float envLevel = 0.0f;
 
-  if (noteTriggered)
+  static uint32_t lastTriggerSeq = 0;
+  if (noteTriggerSeq != lastTriggerSeq)
   {
-    noteTriggered = false;
+    lastTriggerSeq = noteTriggerSeq;
     envState = 1;
     if (paramValues[6] == 0)
     {
