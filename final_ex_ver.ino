@@ -604,7 +604,8 @@ void loop()
   // Керування кроками з урахуванням SWING та оновленого MUTE MODES
   if (isPlaying && seqLength > 0)
   {
-    unsigned long dynamicInterval = stepDurationMs / paramValues[10];
+    int clockDiv = (paramValues[10] < 1) ? 1 : paramValues[10]; // захист від ділення на 0
+    unsigned long dynamicInterval = stepDurationMs / clockDiv;
 
     // Roller застосовуємо ДО розрахунку свінгу, щоб зсув брався від
     // реального (поділеного) інтервалу й не викликав переповнення.
